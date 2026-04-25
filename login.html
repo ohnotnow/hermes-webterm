@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>hermes-webterm</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        height: 100%;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        background: #0d1117;
+        color: #c9d1d9;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        padding: 1rem;
+      }
+      .card {
+        width: min(100%, 22rem);
+        padding: 2rem 1.5rem;
+        background: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 12px;
+        text-align: center;
+      }
+      h1 {
+        font-size: 1rem;
+        font-weight: 500;
+        margin: 0 0 0.25rem 0;
+        color: #8b949e;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      p.prompt {
+        margin: 0 0 1.5rem 0;
+        font-size: 1.1rem;
+        color: #c9d1d9;
+      }
+      .pin {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+      }
+      .pin input {
+        width: 3rem;
+        height: 3.5rem;
+        font-size: 1.75rem;
+        text-align: center;
+        background: #0d1117;
+        color: #c9d1d9;
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        font-family: inherit;
+        caret-color: #58a6ff;
+      }
+      .pin input:focus {
+        outline: none;
+        border-color: #58a6ff;
+        box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+      }
+      .status {
+        min-height: 1.25rem;
+        font-size: 0.875rem;
+        color: #f85149;
+      }
+      .status.ok { color: #3fb950; }
+      .shake { animation: shake 0.4s; }
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20%, 60% { transform: translateX(-6px); }
+        40%, 80% { transform: translateX(6px); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>hermes-webterm</h1>
+      <p class="prompt">Enter PIN</p>
+      <form class="pin" id="pin-form" autocomplete="off">
+        <input type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="PIN digit 1" />
+        <input type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="PIN digit 2" />
+        <input type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="PIN digit 3" />
+        <input type="text" inputmode="numeric" pattern="[0-9]" maxlength="1" aria-label="PIN digit 4" />
+      </form>
+      <div class="status" id="status">&nbsp;</div>
+    </div>
+    <script type="module" src="./login.ts"></script>
+  </body>
+</html>

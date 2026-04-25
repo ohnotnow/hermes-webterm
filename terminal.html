@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>hermes</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: #0d1117;
+        color: #c9d1d9;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        overflow: hidden;
+      }
+      body {
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+      }
+      #term {
+        flex: 1;
+        min-height: 0;
+        padding: 0.5rem;
+      }
+      .xterm, .xterm-viewport, .xterm-screen { height: 100% !important; }
+      #toolbar {
+        display: flex;
+        gap: 0.35rem;
+        padding: 0.5rem;
+        background: #161b22;
+        border-top: 1px solid #30363d;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      #toolbar button {
+        flex: 0 0 auto;
+        min-width: 3rem;
+        padding: 0.6rem 0.75rem;
+        background: #21262d;
+        color: #c9d1d9;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        font-family: inherit;
+        font-size: 0.85rem;
+        cursor: pointer;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      #toolbar button:active { background: #30363d; }
+      #toolbar button.sticky-on {
+        background: #1f6feb;
+        border-color: #1f6feb;
+        color: #fff;
+      }
+      #status {
+        position: fixed;
+        top: 0.5rem;
+        right: 0.5rem;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        background: rgba(0,0,0,0.6);
+        border-radius: 4px;
+        color: #8b949e;
+        pointer-events: none;
+      }
+      #status.connected { color: #3fb950; }
+      #status.disconnected { color: #f85149; }
+    </style>
+  </head>
+  <body>
+    <div id="term"></div>
+    <div id="toolbar">
+      <button data-key="Escape">esc</button>
+      <button data-key="Tab">tab</button>
+      <button data-ctrl="true" id="btn-ctrl">ctrl</button>
+      <button data-key="ArrowUp">↑</button>
+      <button data-key="ArrowDown">↓</button>
+      <button data-key="ArrowLeft">←</button>
+      <button data-key="ArrowRight">→</button>
+      <button data-send="">^C</button>
+      <button data-send="">^D</button>
+      <button id="btn-paste">paste</button>
+    </div>
+    <div id="status">connecting…</div>
+    <script type="module" src="./terminal.ts"></script>
+  </body>
+</html>
