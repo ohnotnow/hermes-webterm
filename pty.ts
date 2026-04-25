@@ -6,44 +6,55 @@ const HOST_SCRIPT = join(import.meta.dir, "pty-host.cjs");
 
 export type PtySession = {
   child: ChildProcess;
-  dispose: () => void;
+  sessionName: string;
+  dispose: (silent?: boolean) => void;
 };
 
-export function spawnForSocket(ws: ServerWebSocket<unknown>, cols: number, rows: number): PtySession {
+export function spawnForSocket(
+  ws: ServerWebSocket<unknown>,
+  cols: number,
+  rows: number,
+  tmuxSessionName: string,
+): PtySession {
   const child = spawn("node", [HOST_SCRIPT], {
     env: {
       ...process.env,
       PTY_COLS: String(cols),
       PTY_ROWS: String(rows),
+      TMUX_SESSION: tmuxSessionName,
     },
     stdio: ["pipe", "pipe", "inherit"],
   });
 
+  let disposed = false;
+  let silent = false;
+
   child.stdout!.on("data", (chunk: Buffer) => {
-    if (ws.readyState === 1) ws.send(chunk);
+    if (!silent && ws.readyState === 1) ws.send(chunk);
   });
 
   child.on("exit", (code) => {
+    // suppress notification when the dispose was intentional (e.g. switching tabs)
+    if (silent) return;
     if (ws.readyState === 1) {
       const display = code == null ? "?" : code;
-      ws.send(`\r\n\x1b[33m[process exited with code ${display}]\x1b[0m\r\n`);
-      ws.close(1000, "process-exit");
+      ws.send(JSON.stringify({ t: "detached", name: tmuxSessionName, code: display }));
     }
   });
 
   child.on("error", (err) => {
-    if (ws.readyState === 1) {
+    if (!silent && ws.readyState === 1) {
       ws.send(`\r\n\x1b[31m[failed to spawn pty host: ${err.message}]\x1b[0m\r\n`);
-      ws.close(1011, "spawn-error");
     }
   });
 
-  let disposed = false;
   return {
     child,
-    dispose: () => {
+    sessionName: tmuxSessionName,
+    dispose: (silentMode = false) => {
       if (disposed) return;
       disposed = true;
+      if (silentMode) silent = true;
       try { child.kill(); } catch {}
     },
   };

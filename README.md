@@ -6,6 +6,17 @@ A small web terminal for accessing the `hermes` CLI (or any command) from a brow
 - **Frontend**: xterm.js with a 4-digit PIN login
 - **PTY**: a tiny Node child process per session (Node hosts `node-pty`; Bun handles everything else)
 
+## Sessions
+
+Each "session" is a real `tmux` session, named with a `hermes-` prefix
+(`hermes-1`, `hermes-2`, ...). Sessions persist across browser disconnects
+and server restarts — close your tab, come back tomorrow, scrollback intact.
+Switch between them via the tab strip at the top of the page; ✕ kills a
+session, ➕ creates a new one. If no sessions exist on connect, one is
+created automatically.
+
+`tmux` must be installed (`apt install tmux` if needed).
+
 ## Setup
 
 ```bash
@@ -19,8 +30,9 @@ cp .env.example .env
 | key | default | purpose |
 | --- | --- | --- |
 | `HERMES_PIN` | _(required, 4 digits)_ | PIN required to log in |
-| `HERMES_CMD` | `hermes` | command to spawn in the PTY |
+| `HERMES_CMD` | `hermes` | command run inside each new tmux session |
 | `HERMES_ARGS` | _(empty)_ | space-separated args |
+| `TMUX_SESSION_PREFIX` | `hermes-` | session name prefix (lets you have other tmux sessions co-existing) |
 | `HOST` | `0.0.0.0` | bind address |
 | `PORT` | `3000` | listen port |
 
@@ -44,12 +56,13 @@ Then open `http://<lan-ip>:3000/` from any device on your LAN, enter the PIN, an
 
 | | |
 | --- | --- |
-| `server.ts` | Bun.serve — routes, WebSocket, cookie gate |
+| `server.ts` | Bun.serve — routes, WebSocket, cookie gate, session REST |
 | `auth.ts` | PIN check, session map, rate limiter |
-| `pty.ts` | Spawns one `pty-host.cjs` per WebSocket and bridges I/O |
-| `pty-host.cjs` | Node helper that hosts `node-pty` (Bun + node-pty don't play nicely yet) |
+| `tmux.ts` | List / create / kill `hermes-*` tmux sessions via `tmux` CLI |
+| `pty.ts` | Spawns one `pty-host.cjs` per attached session, bridges I/O |
+| `pty-host.cjs` | Node helper that runs `tmux attach -t <name>` inside `node-pty` |
 | `login.html` / `login.ts` | PIN entry page |
-| `terminal.html` / `terminal.ts` | xterm.js page with mobile toolbar |
+| `terminal.html` / `terminal.ts` | xterm.js page with tab strip + mobile toolbar |
 
 ## Notes
 

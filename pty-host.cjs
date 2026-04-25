@@ -4,20 +4,32 @@
 //   {"t":"r","c":80,"r":24} resize
 // Stdout: raw bytes from the PTY (no framing).
 // Exit code mirrors the child shell's exit code.
+//
+// Mode is selected by env:
+//   TMUX_SESSION=<name>     attach to an existing tmux session
+//   (otherwise)             spawn HERMES_CMD directly
 
 const pty = require("node-pty");
 
-const cmd = process.env.HERMES_CMD || "hermes";
-const args = (process.env.HERMES_ARGS || "").split(" ").filter(Boolean);
+const tmuxSession = process.env.TMUX_SESSION || "";
+const cmd = tmuxSession ? "tmux" : (process.env.HERMES_CMD || "hermes");
+const args = tmuxSession
+  ? ["attach-session", "-t", tmuxSession]
+  : (process.env.HERMES_ARGS || "").split(" ").filter(Boolean);
+
 const cols = Number(process.env.PTY_COLS || 80);
 const rows = Number(process.env.PTY_ROWS || 24);
+
+const env = { ...process.env, TERM: "xterm-256color" };
+// don't inherit our own parent tmux's TMUX socket — we want a fresh client
+delete env.TMUX;
 
 const proc = pty.spawn(cmd, args, {
   name: "xterm-256color",
   cols,
   rows,
   cwd: process.env.HOME || process.cwd(),
-  env: { ...process.env, TERM: "xterm-256color" },
+  env,
 });
 
 proc.onData((d) => {
