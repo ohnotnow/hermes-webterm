@@ -56,3 +56,4 @@ Then open `http://<lan-ip>:3000/` from any device on your LAN, enter the PIN, an
 - The Node child per session is the workaround for a Bun + `node-pty` incompatibility (the PTY exits with SIGHUP under Bun). Each session = one short-lived `node` process. Cheap enough on a Pi.
 - Closing the browser tab kills the child process and the underlying `hermes` (or whatever you spawned).
 - Mobile toolbar provides `esc`, `tab`, arrows, sticky `ctrl`, `^C`, `^D`, and `paste`.
+- **iOS Safari is unreliable** for the WebSocket — the upgrade succeeds server-side but Safari often won't fire `onopen` until the page receives a user tap, and even then it's flaky. Use **Firefox Focus** or **Chrome iOS** on iPhone instead; both work first-time. (Firefox Focus has no bookmarks, sadly, so add the URL to your notes app or similar.)

@@ -96,8 +96,9 @@ const server = Bun.serve<WsData, {}>({
 
   websocket: {
     open(ws) {
-      // PTY spawned on first resize message (so we know the right size)
-      ws.send("\x1b[2J\x1b[H");
+      // Wait for the client to send the first message before writing anything.
+      // The client's onopen sends a resize, which both sizes the PTY and gives
+      // it the trigger to spawn.
     },
     message(ws, raw) {
       if (!ws.data.authed) return;

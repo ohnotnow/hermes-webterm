@@ -66,9 +66,11 @@ async function connect() {
 
   const proto = location.protocol === "https:" ? "wss:" : "ws:";
   ws = new WebSocket(`${proto}//${location.host}/ws`);
+  ws.binaryType = "arraybuffer";
 
   ws.onopen = () => {
     setStatus("connected", "connected");
+    term.reset();
     fit.fit();
     sendResize();
     term.focus();
@@ -77,18 +79,16 @@ async function connect() {
   ws.onmessage = (e) => {
     if (typeof e.data === "string") {
       term.write(e.data);
+    } else if (e.data instanceof ArrayBuffer) {
+      term.write(new Uint8Array(e.data));
     } else if (e.data instanceof Blob) {
-      e.data.text().then((s) => term.write(s));
+      e.data.arrayBuffer().then((b) => term.write(new Uint8Array(b)));
     }
   };
 
   ws.onclose = () => {
     setStatus("disconnected — reconnecting…", "disconnected");
     setTimeout(connect, 1500);
-  };
-
-  ws.onerror = () => {
-    // onclose will follow and trigger reconnect
   };
 }
 
