@@ -8,7 +8,9 @@ const toolbar = document.getElementById("toolbar") as HTMLDivElement;
 const ctrlBtn = document.getElementById("btn-ctrl") as HTMLButtonElement;
 const pasteBtn = document.getElementById("btn-paste") as HTMLButtonElement;
 const tabsEl = document.getElementById("tabs") as HTMLDivElement;
+const tabAddGroup = document.getElementById("tab-add-group") as HTMLDivElement;
 const tabAddBtn = document.getElementById("tab-add") as HTMLButtonElement;
+const tabAddProfile = document.getElementById("tab-add-profile") as HTMLSelectElement;
 
 const term = new Terminal({
   cursorBlink: true,
@@ -34,7 +36,7 @@ term.loadAddon(fit);
 term.open(termEl);
 fit.fit();
 
-type SessionInfo = { name: string; created: number; attached: number };
+type SessionInfo = { name: string; created: number; attached: number; profile?: string };
 
 let ws: WebSocket | null = null;
 let ctrlSticky = false;
@@ -76,7 +78,8 @@ function renderTabs() {
     tab.title = s.name;
 
     const label = document.createElement("span");
-    label.textContent = s.name.replace(/^hermes-/, "");
+    const num = s.name.replace(/^hermes-/, "");
+    label.textContent = s.profile ? `${num} · ${s.profile}` : num;
     tab.appendChild(label);
 
     const x = document.createElement("span");
@@ -86,7 +89,7 @@ function renderTabs() {
     x.title = `kill ${s.name}`;
     tab.appendChild(x);
 
-    tabsEl.insertBefore(tab, tabAddBtn);
+    tabsEl.insertBefore(tab, tabAddGroup);
   }
 }
 
@@ -106,13 +109,16 @@ async function refreshSessions() {
   renderTabs();
 }
 
-async function createNewSession(): Promise<string | null> {
+async function createNewSession(profile?: string): Promise<string | null> {
   tabAddBtn.disabled = true;
+  tabAddProfile.disabled = true;
   try {
+    const payload: { profile?: string } = {};
+    if (profile) payload.profile = profile;
     const r = await fetch("/api/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: "{}",
+      body: JSON.stringify(payload),
     });
     if (!r.ok) return null;
     const data = await r.json();
@@ -121,7 +127,30 @@ async function createNewSession(): Promise<string | null> {
     return null;
   } finally {
     tabAddBtn.disabled = false;
+    tabAddProfile.disabled = false;
   }
+}
+
+async function refreshProfiles() {
+  let list: string[] = [];
+  try {
+    const r = await fetch("/api/profiles");
+    if (r.ok) {
+      const data = await r.json();
+      list = Array.isArray(data.profiles) ? data.profiles : [];
+    }
+  } catch {}
+
+  const placeholder = tabAddProfile.querySelector("option[disabled]") as HTMLOptionElement | null;
+  tabAddProfile.innerHTML = "";
+  if (placeholder) tabAddProfile.appendChild(placeholder);
+  for (const p of list) {
+    const opt = document.createElement("option");
+    opt.value = p;
+    opt.textContent = p;
+    tabAddProfile.appendChild(opt);
+  }
+  if (placeholder) placeholder.selected = true;
 }
 
 async function killSessionOnServer(name: string) {
@@ -148,7 +177,7 @@ function pickInitialSession(list: SessionInfo[]): string | null {
 }
 
 async function initOnConnect() {
-  await refreshSessions();
+  await Promise.all([refreshSessions(), refreshProfiles()]);
   if (sessions.length === 0) {
     const created = await createNewSession();
     if (created) await refreshSessions();
@@ -160,6 +189,23 @@ async function initOnConnect() {
     setStatus("no sessions — tap + to create one", "disconnected");
   }
 }
+
+tabAddProfile.addEventListener("change", async () => {
+  const profile = tabAddProfile.value;
+  // Reset the visible label back to "⌄" immediately so the picker is reusable.
+  const placeholder = tabAddProfile.querySelector("option[disabled]") as HTMLOptionElement | null;
+  if (placeholder) placeholder.selected = true;
+  if (!profile) return;
+  const name = await createNewSession(profile);
+  await refreshSessions();
+  if (name) attach(name);
+});
+
+// Refresh the profile list whenever the user is about to open the picker, so
+// new directories on disk show up without a page reload.
+tabAddProfile.addEventListener("pointerdown", () => {
+  void refreshProfiles();
+});
 
 async function connect() {
   setStatus("connecting…", "");
@@ -242,7 +288,7 @@ window.addEventListener("resize", () => {
 tabsEl.addEventListener("click", async (e) => {
   const target = e.target as HTMLElement;
 
-  if (target === tabAddBtn || target.closest("#tab-add")) {
+  if (target === tabAddBtn || (target.closest("#tab-add") && !target.closest("#tab-add-profile"))) {
     const name = await createNewSession();
     await refreshSessions();
     if (name) attach(name);

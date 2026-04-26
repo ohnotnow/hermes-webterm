@@ -19,8 +19,9 @@ import {
   isValidSessionName,
   SESSION_PREFIX,
 } from "./tmux";
+import { isValidProfileName, listProfiles } from "./profiles";
 
-const PORT = Number(process.env.PORT ?? 3000);
+const PORT = Number(process.env.PORT ?? 3003);
 const HOST = process.env.HOST ?? "0.0.0.0";
 
 type WsData = {
@@ -61,15 +62,30 @@ const server = Bun.serve<WsData, {}>({
       POST: async (req) => {
         const token = getSessionFromCookie(req.headers.get("cookie"));
         if (!isValidSession(token)) return new Response("unauthorized", { status: 401 });
-        let body: { name?: string } = {};
+        let body: { name?: string; profile?: string } = {};
         try { body = await req.json(); } catch {}
+        if (body.profile != null && !isValidProfileName(body.profile)) {
+          return Response.json({ error: "invalid profile" }, { status: 400 });
+        }
         try {
-          const info = await createTmuxSession(body.name);
+          const info = await createTmuxSession({
+            name: body.name,
+            profile: body.profile,
+          });
           return Response.json({ session: info });
         } catch (e) {
           return Response.json({ error: (e as Error).message }, { status: 400 });
         }
       },
+    },
+
+    "/api/profiles": async (req) => {
+      const token = getSessionFromCookie(req.headers.get("cookie"));
+      if (!isValidSession(token)) return new Response("unauthorized", { status: 401 });
+      const dirs = await listProfiles();
+      // Always offer plain `hermes` (no profile flag) at the top of the menu.
+      const profiles = ["hermes", ...dirs.filter((d) => d !== "hermes")];
+      return Response.json({ profiles });
     },
 
     "/api/sessions/:name": {

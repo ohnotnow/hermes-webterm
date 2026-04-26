@@ -73,20 +73,39 @@
       .tab .x:hover { background: rgba(248, 81, 73, 0.2); color: #f85149; }
       .tab.active .x { color: rgba(255,255,255,0.7); }
       .tab.active .x:hover { background: rgba(255,255,255,0.15); color: #fff; }
-      #tab-add {
+      .tab-add-group {
         flex: 0 0 auto;
-        padding: 0.4rem 0.7rem;
-        background: transparent;
-        color: #8b949e;
+        display: inline-flex;
+        align-items: stretch;
         border: 1px dashed #30363d;
         border-radius: 6px;
+        overflow: hidden;
+      }
+      .tab-add-group:hover { border-color: #58a6ff; }
+      .tab-add-group:focus-within { border-color: #58a6ff; }
+      #tab-add, #tab-add-profile {
+        background: transparent;
+        color: #8b949e;
+        border: none;
         font-family: inherit;
-        font-size: 0.95rem;
         cursor: pointer;
         -webkit-tap-highlight-color: transparent;
+        padding: 0.4rem 0.7rem;
       }
-      #tab-add:hover { color: #c9d1d9; border-color: #58a6ff; }
-      #tab-add[disabled] { opacity: 0.5; cursor: progress; }
+      #tab-add { font-size: 0.95rem; }
+      .tab-add-group:hover #tab-add,
+      .tab-add-group:hover #tab-add-profile { color: #c9d1d9; }
+      #tab-add-profile {
+        font-size: 0.7rem;
+        padding: 0.4rem 0.4rem;
+        border-left: 1px dashed #30363d;
+        appearance: none;
+        -webkit-appearance: none;
+        text-align: center;
+        text-align-last: center;
+      }
+      #tab-add-profile:focus { outline: none; }
+      #tab-add[disabled], #tab-add-profile[disabled] { opacity: 0.5; cursor: progress; }
       #toolbar {
         display: flex;
         gap: 0.35rem;
@@ -133,7 +152,12 @@
   </head>
   <body>
     <div id="tabs">
-      <button id="tab-add" title="new session">+</button>
+      <div class="tab-add-group" id="tab-add-group">
+        <button id="tab-add" title="new session">+</button>
+        <select id="tab-add-profile" title="new session with hermes profile">
+          <option value="" selected disabled>⌄</option>
+        </select>
+      </div>
     </div>
     <div id="term"></div>
     <div id="toolbar">
