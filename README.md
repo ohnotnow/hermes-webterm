@@ -3,8 +3,15 @@
 A small web terminal for accessing the `hermes` CLI (or any command) from a browser on your LAN.
 
 - **Server**: Bun (HTTP, WebSocket, frontend bundling)
-- **Frontend**: xterm.js with a 4-digit PIN login
-- **PTY**: a tiny Node child process per session (Node hosts `node-pty`; Bun handles everything else)
+- **Frontend**: xterm.js with a 4-digit PIN login and a Chrome-style tab strip for switching between sessions
+- **Sessions**: backed by `tmux` — persist across browser disconnects and server restarts, with full scrollback
+- **PTY**: a tiny Node child process per attached session (Node hosts `node-pty`; Bun handles everything else)
+
+## Prerequisites
+
+- [Bun](https://bun.com) (1.3+)
+- `tmux` (`apt install tmux`)
+- Node (for `node-pty`'s native module — `bun install` will rebuild it for you)
 
 ## Sessions
 
