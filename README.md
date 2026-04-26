@@ -7,6 +7,8 @@ A small web terminal for accessing the `hermes` CLI (or any command) from a brow
 - **Sessions**: backed by `tmux` — persist across browser disconnects and server restarts, with full scrollback
 - **PTY**: a tiny Node child process per attached session (Node hosts `node-pty`; Bun handles everything else)
 
+![Screenshot](screenshot.jpg)
+
 ## Prerequisites
 
 - [Bun](https://bun.com) (1.3+)
