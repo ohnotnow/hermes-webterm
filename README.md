@@ -1,6 +1,6 @@
 # hermes-webterm
 
-A small web terminal for accessing the `hermes` CLI (or any command) from a browser on your LAN.
+A small web terminal for accessing the [hermes agent](https://hermes-agent.nousresearch.com/) (or generic terminal) from a browser on your LAN.
 
 - **Server**: Bun (HTTP, WebSocket, frontend bundling)
 - **Frontend**: xterm.js with a 4-digit PIN login and a Chrome-style tab strip for switching between sessions
