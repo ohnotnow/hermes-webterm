@@ -109,12 +109,15 @@ async function refreshSessions() {
   renderTabs();
 }
 
-async function createNewSession(profile?: string): Promise<string | null> {
+type Launcher = { profile?: string; shortcut?: string };
+
+async function createNewSession(launcher?: Launcher): Promise<string | null> {
   tabAddBtn.disabled = true;
   tabAddProfile.disabled = true;
   try {
-    const payload: { profile?: string } = {};
-    if (profile) payload.profile = profile;
+    const payload: Launcher = {};
+    if (launcher?.profile) payload.profile = launcher.profile;
+    if (launcher?.shortcut) payload.shortcut = launcher.shortcut;
     const r = await fetch("/api/sessions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -132,24 +135,51 @@ async function createNewSession(profile?: string): Promise<string | null> {
 }
 
 async function refreshProfiles() {
-  let list: string[] = [];
+  let profiles: string[] = [];
+  let shortcuts: string[] = [];
   try {
-    const r = await fetch("/api/profiles");
-    if (r.ok) {
-      const data = await r.json();
-      list = Array.isArray(data.profiles) ? data.profiles : [];
+    const [pr, sr] = await Promise.all([
+      fetch("/api/profiles"),
+      fetch("/api/shortcuts"),
+    ]);
+    if (pr.ok) {
+      const data = await pr.json();
+      profiles = Array.isArray(data.profiles) ? data.profiles : [];
+    }
+    if (sr.ok) {
+      const data = await sr.json();
+      shortcuts = Array.isArray(data.shortcuts) ? data.shortcuts : [];
     }
   } catch {}
 
   const placeholder = tabAddProfile.querySelector("option[disabled]") as HTMLOptionElement | null;
   tabAddProfile.innerHTML = "";
   if (placeholder) tabAddProfile.appendChild(placeholder);
-  for (const p of list) {
-    const opt = document.createElement("option");
-    opt.value = p;
-    opt.textContent = p;
-    tabAddProfile.appendChild(opt);
+
+  if (profiles.length > 0) {
+    const group = document.createElement("optgroup");
+    group.label = "profiles";
+    for (const p of profiles) {
+      const opt = document.createElement("option");
+      opt.value = `profile:${p}`;
+      opt.textContent = p;
+      group.appendChild(opt);
+    }
+    tabAddProfile.appendChild(group);
   }
+
+  if (shortcuts.length > 0) {
+    const group = document.createElement("optgroup");
+    group.label = "shortcuts";
+    for (const s of shortcuts) {
+      const opt = document.createElement("option");
+      opt.value = `shortcut:${s}`;
+      opt.textContent = s;
+      group.appendChild(opt);
+    }
+    tabAddProfile.appendChild(group);
+  }
+
   if (placeholder) placeholder.selected = true;
 }
 
@@ -191,18 +221,24 @@ async function initOnConnect() {
 }
 
 tabAddProfile.addEventListener("change", async () => {
-  const profile = tabAddProfile.value;
+  const value = tabAddProfile.value;
   // Reset the visible label back to "⌄" immediately so the picker is reusable.
   const placeholder = tabAddProfile.querySelector("option[disabled]") as HTMLOptionElement | null;
   if (placeholder) placeholder.selected = true;
-  if (!profile) return;
-  const name = await createNewSession(profile);
+  if (!value) return;
+  const sep = value.indexOf(":");
+  if (sep < 0) return;
+  const kind = value.slice(0, sep);
+  const name = value.slice(sep + 1);
+  const launcher: Launcher =
+    kind === "shortcut" ? { shortcut: name } : { profile: name };
+  const created = await createNewSession(launcher);
   await refreshSessions();
-  if (name) attach(name);
+  if (created) attach(created);
 });
 
-// Refresh the profile list whenever the user is about to open the picker, so
-// new directories on disk show up without a page reload.
+// Refresh the profile + shortcut lists whenever the user is about to open the
+// picker, so changes on disk show up without a page reload.
 tabAddProfile.addEventListener("pointerdown", () => {
   void refreshProfiles();
 });

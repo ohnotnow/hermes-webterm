@@ -22,6 +22,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .env.production.local
 .env.local
 
+# user-local shortcut definitions (see HERMES_SHORTCUTS_FILE in README)
+shortcuts.json
+
 # caches
 .eslintcache
 .cache

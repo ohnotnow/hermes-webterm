@@ -26,13 +26,36 @@ session. If no sessions exist on connect, one is created automatically.
 The new-session control is a split button:
 
 - **`+`** runs whatever you set in `HERMES_CMD` (defaults to `hermes`).
-- **`⌄`** opens a dropdown with every directory found in `~/.hermes/profiles/`
-  (configurable via `HERMES_PROFILES_DIR`), plus a top-level `hermes` entry.
-  Picking a profile runs `hermes -p <profile>` in a fresh tmux session; the
-  profile name is shown next to the tab number (e.g. `3 · coder`) and is
-  stashed on the tmux session itself, so it survives a server restart.
+- **`⌄`** opens a dropdown with two groups:
+  - **profiles** — every directory found in `~/.hermes/profiles/`
+    (configurable via `HERMES_PROFILES_DIR`), plus a top-level `hermes` entry.
+    Picking one runs `hermes -p <profile>` in a fresh tmux session.
+  - **shortcuts** — arbitrary one-tap commands defined in `shortcuts.json`
+    in this project's directory (override via `HERMES_SHORTCUTS_FILE`).
+    Useful on a phone, where typing is the bottleneck.
+
+  In both cases the chosen name is shown next to the tab number (e.g.
+  `3 · coder`) and stashed on the tmux session itself, so it survives a
+  server restart.
 
 `tmux` must be installed (`apt install tmux` if needed).
+
+### Shortcuts
+
+Drop a `shortcuts.json` next to `server.ts` (or point `HERMES_SHORTCUTS_FILE`
+elsewhere). It's a plain JSON object mapping a label to a shell command:
+
+```json
+{
+  "claude": "claude",
+  "pi": "ssh pi@example.com",
+  "logs": "journalctl -fu my-service"
+}
+```
+
+Each command is run via `sh -c`, so quoting, pipes, and env vars all work as
+you'd expect. The file is optional — if it doesn't exist the shortcuts group
+just doesn't appear.
 
 ## Setup
 
@@ -50,6 +73,7 @@ cp .env.example .env
 | `HERMES_CMD` | `hermes` | command run for the **`+`** button (e.g. set to `bash` if you want a quick shell) |
 | `HERMES_ARGS` | _(empty)_ | space-separated args appended to `HERMES_CMD` |
 | `HERMES_PROFILES_DIR` | `~/.hermes/profiles` | directory scanned for hermes profile sub-directories |
+| `HERMES_SHORTCUTS_FILE` | `./shortcuts.json` | JSON map of shortcut name → shell command, shown alongside profiles in the `⌄` menu (defaults to a file alongside `server.ts`) |
 | `TMUX_SESSION_PREFIX` | `hermes-` | session name prefix (lets you have other tmux sessions co-existing) |
 | `HOST` | `0.0.0.0` | bind address |
 | `PORT` | `3003` | listen port |
@@ -78,6 +102,7 @@ Then open `http://<lan-ip>:3003/` from any device on your LAN, enter the PIN, an
 | `auth.ts` | PIN check, session map, rate limiter |
 | `tmux.ts` | List / create / kill `hermes-*` tmux sessions via `tmux` CLI |
 | `profiles.ts` | Lists hermes profile directories under `HERMES_PROFILES_DIR` |
+| `shortcuts.ts` | Reads `HERMES_SHORTCUTS_FILE` for one-tap shell command shortcuts |
 | `pty.ts` | Spawns one `pty-host.cjs` per attached session, bridges I/O |
 | `pty-host.cjs` | Node helper that runs `tmux attach -t <name>` inside `node-pty` |
 | `login.html` / `login.ts` | PIN entry page |

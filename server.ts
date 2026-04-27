@@ -20,6 +20,7 @@ import {
   SESSION_PREFIX,
 } from "./tmux";
 import { isValidProfileName, listProfiles } from "./profiles";
+import { getShortcut, isValidShortcutName, listShortcuts } from "./shortcuts";
 
 const PORT = Number(process.env.PORT ?? 3003);
 const HOST = process.env.HOST ?? "0.0.0.0";
@@ -62,15 +63,25 @@ const server = Bun.serve<WsData, {}>({
       POST: async (req) => {
         const token = getSessionFromCookie(req.headers.get("cookie"));
         if (!isValidSession(token)) return new Response("unauthorized", { status: 401 });
-        let body: { name?: string; profile?: string } = {};
+        let body: { name?: string; profile?: string; shortcut?: string } = {};
         try { body = await req.json(); } catch {}
         if (body.profile != null && !isValidProfileName(body.profile)) {
           return Response.json({ error: "invalid profile" }, { status: 400 });
         }
+        if (body.shortcut != null && !isValidShortcutName(body.shortcut)) {
+          return Response.json({ error: "invalid shortcut" }, { status: 400 });
+        }
+        let shortcut = undefined;
+        if (body.shortcut) {
+          const sc = await getShortcut(body.shortcut);
+          if (!sc) return Response.json({ error: "unknown shortcut" }, { status: 400 });
+          shortcut = sc;
+        }
         try {
           const info = await createTmuxSession({
             name: body.name,
-            profile: body.profile,
+            profile: shortcut ? undefined : body.profile,
+            shortcut,
           });
           return Response.json({ session: info });
         } catch (e) {
@@ -86,6 +97,13 @@ const server = Bun.serve<WsData, {}>({
       // Always offer plain `hermes` (no profile flag) at the top of the menu.
       const profiles = ["hermes", ...dirs.filter((d) => d !== "hermes")];
       return Response.json({ profiles });
+    },
+
+    "/api/shortcuts": async (req) => {
+      const token = getSessionFromCookie(req.headers.get("cookie"));
+      if (!isValidSession(token)) return new Response("unauthorized", { status: 401 });
+      const list = await listShortcuts();
+      return Response.json({ shortcuts: list.map((s) => s.name) });
     },
 
     "/api/sessions/:name": {

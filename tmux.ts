@@ -57,6 +57,7 @@ export async function nextAutoName(): Promise<string> {
 export type CreateSessionOpts = {
   name?: string;
   profile?: string; // when set, runs `hermes -p <profile>` instead of HERMES_CMD
+  shortcut?: { name: string; cmd: string }; // arbitrary command run via `sh -c`
 };
 
 export async function createSession(opts: CreateSessionOpts = {}): Promise<SessionInfo> {
@@ -75,7 +76,10 @@ export async function createSession(opts: CreateSessionOpts = {}): Promise<Sessi
   // Use a detached session so it survives the pty-host child dying.
   // The literal string "hermes" is a sentinel meaning "plain hermes, no -p flag",
   // independent of HERMES_CMD. Anything else is treated as a real profile name.
-  if (opts.profile === "hermes") {
+  if (opts.shortcut) {
+    await $`tmux new-session -d -s ${sessionName} sh -c ${opts.shortcut.cmd}`.quiet();
+    await $`tmux set-option -t ${sessionName} ${PROFILE_OPT} ${opts.shortcut.name}`.nothrow().quiet();
+  } else if (opts.profile === "hermes") {
     await $`tmux new-session -d -s ${sessionName} hermes`.quiet();
     await $`tmux set-option -t ${sessionName} ${PROFILE_OPT} hermes`.nothrow().quiet();
   } else if (opts.profile) {
@@ -91,7 +95,7 @@ export async function createSession(opts: CreateSessionOpts = {}): Promise<Sessi
     name: sessionName,
     created: Math.floor(Date.now() / 1000),
     attached: 0,
-    profile: opts.profile ?? "",
+    profile: opts.shortcut?.name ?? opts.profile ?? "",
   };
 }
 
